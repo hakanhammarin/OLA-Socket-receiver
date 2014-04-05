@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+
+	<title>Test Redlight</title>
+
+<script src="http://127.0.0.1:3000/socket.io/socket.io.js"></script>
+<script type='text/javascript' src='https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js'></script>
+
+
+</head>
+
+<body>
+<table>
+<td><div class="41" id="light">
+    <span class="41red" id="red"></span>
+    <span class="41orange" id="orange"></span>
+    <span class="41gren" id="green"></span>
+</div>
+</td>
+<td>
+<div class="100" id="light">
+   <span class="100red" id="red"></span>
+    <span class="100orange" id="orange"></span>
+    <span class="100gren" id="green"></span>
+</div>
+</td>
+</table>
+<button id="button">Switch Light2</button>
+
+ <style type='text/css'>
+    body {
+    background-color: #666;
+    margin: 10px;
+}
+
+/*! Light */
+#light {
+    background-color: #000;
+    box-shadow: 0 0 5px rgba(0,0,0, .8);
+    overflow: hidden;
+    padding: 0 0 4px;
+    width: 40px;
+}
+
+#light span {
+    border-radius: 50px;
+    display: block;
+    height: 30px;
+    margin: 4px auto 0;
+    opacity: .5;
+    width: 30px;
+}
+
+/*! Light colours */
+#red    { background-color: red; }
+#orange { background-color: orange; }
+#green  { background-color: green; }
+
+/*! Active states */
+#light span.active    { opacity: 1; }
+#light #red.active    { box-shadow: 0 0 10px red; }
+#light #orange.active { box-shadow: 0 0 10px orange; }
+#light #green.active  { box-shadow: 0 0 10px green; }
+
+/*! Toggle button */
+button {
+    margin-top: 10px;
+}
+
+  </style>
+
+<script type='text/javascript'>
+$(function(){
+$('button').on('click', function() {
+    // Caching
+    //var self = $('.active');
+    var self = $('.123');
+    
+    // Check if another element exists after the currently active one otherwise
+    // find the parent and start again
+    if (self.next().length) {
+        self
+            .removeClass('active')
+            .next()
+            .addClass('active');
+    } else {
+        self
+            .removeClass('active')
+            .parent()
+            .find('span:first')
+            .addClass('active');
+    }
+});
+
+});  
+
+</script>
+
+<script>
+$(document).ready(function() {
+		
+		
+
+ var socket  = io.connect('http://127.0.0.1:3000');
+ var filtervalue='';
+ var filterdata='';
+ var eventdata='';
+ var finishdata='';
+function renderFinishData()
+ {
+    var out = "";
+	console.log("renderFinishData");
+	$.each(finishdata, function(key, value) {
+		$("p").filter("."+value.BibNumber).append(" - LC: <strong>"+value.Time+"</strong>").addClass("ui-li-10mila-finish");
+    });
+  };
+function renderData()
+{
+var out = "";
+	console.log("renderdata");
+    $.each(eventdata, function(key, value) {
+		$.each(filtervalue, function(index,filtervalue2) {
+			//console.log('FILTER: '+filtervalue+';');
+			//console.log('FILTER2: '+filtervalue2+';');
+			if(value.BibNumber===filtervalue2) { 
+//				out += "<li class='"+value.BibNumber+"'><strong>"+value.BibNumber+"</strong> - PW: "+value.Time+"</li>";
+			out += '<li><h3>'+value.BibNumber+' &middot; '+value.teamName+' &middot; '+value.Leg+'</h3><p class="'+value.BibNumber+'">PW: <strong>'+value.Time+'</strong></p> </li>';
+			};
+		});
+		if(filtervalue==='') {
+			out += '<li><h3>'+value.BibNumber+' &middot; '+value.teamName+' &middot; '+value.Leg+'</h3><p class="'+value.BibNumber+'">PW: <strong>'+value.Time+'</strong></p> </li>';
+			};
+	});
+    $('#prewarning').html(out);
+	$('#prewarning').listview('refresh');
+};
+$('#save').click(function() {
+	filterdata = $('#bibfilter').val();
+	console.log(filterdata);
+	filtervalue = filterdata.split(/[, ]/);
+	console.log(filtervalue);
+	renderData();
+	renderFinishData();
+});
+$('#clear').click(function() {
+	filtervalue='';
+	filterdata='';
+	renderData();
+    renderFinishData();
+});
+  socket.on('connect', function(){
+  
+  console.log('Socket: Connect');
+  $('#online').html('<p style="color:blue;text-align:center">Prewarning - <b>Online</b></p>');
+  });
+  socket.on('error', function(){
+  
+  console.log('Socket: ERROR');
+  $('#online').html('<p style="color:red;text-align:center">Prewarning - <b>Offline</b></p>');
+  });
+  socket.on('disconnect', function(){
+  
+  console.log('Socket: Disconnect');
+  $('#online').html('<p style="color:red;text-align:center">Prewarning - <b>Offline</b></p>');
+  });
+  socket.on('time', function(data) {
+  $('#online').html('<p style="color:green;text-align:center">Prewarning - <b>Online - '+data+'</b></p>');
+  });
+  socket.on('event', function(data) {
+  eventdata=data;
+  console.log(eventdata);
+  //renderData();
+  if (eventdata.control){
+  	console.log(eventdata.control);
+  }
+  if (eventdata.result == 'OK'){
+  	console.log('OK');
+  }
+  }); 
+
+   socket.on('controlStatus', function(data) {
+  //eventdata=data;
+  console.log(data);
+  //renderData();
+  });
+  socket.on('finish', function(data) {
+  finishdata=data;
+  renderFinishData();
+  });
+});
+</script>
+</body>
+</html> 
+
